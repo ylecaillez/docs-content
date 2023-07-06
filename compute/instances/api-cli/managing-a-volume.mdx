@@ -1,10 +1,10 @@
 ---
 meta:
-  title: How to mount and use a Block Storage volume
-  description: This page explains how to mount and use a Block Storage volume
+  title: Managing a Block Storage volume
+  description: This page explains how to mount, use and dismount Block Storage volume
 content:
-  h1: How to mount and use a Block Storage volume
-  paragraph: This page explains how to mount and use a Block Storage volume
+  h1: Managing a Block Storage volume
+  paragraph: This page explains how to mount, use and dismount a Block Storage volume
 tags: volume block-storage block mount connect use
 dates:
   validation: 2023-06-08
@@ -14,10 +14,6 @@ categories:
   - storage
 ---
 
-To use a storage device in Linux it must be mounted (attached) to the operating system. Once it is mounted, a filesystem can be created on the device to store data. Similarly, to remove the device securely from the operating system, you should [unmount it](/storage/block/how-to/detach-a-volume) properly.
-
-This document explains how to mount an additional block volume to your Instance. Note that the root volume of the Instance is mounted for you at the time of Instance creation, this how-to concerns additional block volumes only.
-
 <Macro id="iam-requirements" />
 
 <Message type="requirement">
@@ -26,7 +22,13 @@ This document explains how to mount an additional block volume to your Instance.
   - You have an [Instance](/compute/instances/concepts/#instance) with an [attached](/storage/block/how-to/attach-a-volume/) additional Block Storage volume
 </Message>
 
-## How to verify device availability
+## Mounting and using a volume
+
+To use a storage device in Linux it must be mounted (attached) to the operating system. Once it is mounted, a filesystem can be created on the device to store data. Similarly, to remove the device securely from the operating system, you should [unmount it](/storage/block/how-to/detach-a-volume) properly.
+
+This document explains how to mount an additional block volume to your Instance. Note that the root volume of the Instance is mounted for you at the time of Instance creation, this how-to concerns additional block volumes only.
+
+### Verifying device availability
 
 1. Connect to your Instance with `ssh`.
     ```
@@ -47,13 +49,13 @@ This document explains how to mount an additional block volume to your Instance.
   ├─vda1  252:1    0 18.5G  0 part /
   └─vda15 252:15   0  100M  0 part /boot/efi
   ```
-	
+
 <Message type="note">
   The Scaleway ecosystem uses [GiB](https://en.wikipedia.org/wiki/Gibibyte) to define storage sizes and not [GB](https://en.wikipedia.org/wiki/Gigabyte) as the default on linux.
 </Message>
 
 
-## How to format the Block Volume
+### Formatting the Block Volume
 
 1. Create a file system with the following command. This command uses the `ext4` filesystem, though you can choose another if you prefer.
     ```
@@ -75,7 +77,7 @@ This document explains how to mount an additional block volume to your Instance.
   └─vda15 vfat         B3E7-7040                            /boot/efi
   ```
 
-## How to mount the Block Volume
+### Mounting the Block Volume
 
 Once your file system is created, you need to mount it.
 
@@ -111,7 +113,7 @@ Once your file system is created, you need to mount it.
   └─vda15 252:15   0  100M  0 part /boot/efi
   ```
 
-## How to use fstab for Persistent Mounting
+### Using fstab for Persistent Mounting
 
 With the current configuration, the block device will not be mounted automatically upon reboot. Use the `fstab` file to make sure the reboot does not impact your file system.
 
@@ -121,9 +123,9 @@ Add this line to the `/etc/fstab` file of your instance:
 echo "UUID=$(blkid --output value /dev/sda | head -n1) /mnt/block-volume ext4 defaults 0 0" >> /etc/fstab
 ```
 
-## How to transfer data from your local machine to the remote block volume
+### Transferring data from your local machine to the remote block volume
 
-You may wish to transfer files from your local machine to your Instance's remote block volume. This can be simply achieved with [rsync](https://en.wikipedia.org/wiki/Rsync), a tool for efficiently transferring and copying files. The rsync utility is pre-installed on most Linux distributions and macOS. 
+You may wish to transfer files from your local machine to your Instance's remote block volume. This can be simply achieved with [rsync](https://en.wikipedia.org/wiki/Rsync), a tool for efficiently transferring and copying files. The rsync utility is pre-installed on most Linux distributions and macOS.
 
 1. Check that rsync is installed on your local machine with the following command:
     ```
@@ -162,6 +164,86 @@ You may wish to transfer files from your local machine to your Instance's remote
 
 The file is now transferred. You can connect to your Instance again, and use the command `cd /mnt/block-volume ; ls` to check that the file appears in the directory.
 
+## Increasing the partition size of the volume
+
+<Message type="tip">
+  It is recommended to make a backup of your data using the [snapshot](/compute/instances/how-to/create-a-snapshot/) feature, before increasing the partition size of your volume. This helps to avoid any potential data loss.
+</Message>
+
+
+1. Connect to your Instance using [SSH](/compute/instances/how-to/connect-to-instance/).
+2. Use the `lsblk` command to identify your Block Storage volume's mount point. In the following example the volume is mounted at `/mnt/block-volume`:
+    ```
+    root@scw-distracted-keldysh:~# lsblk
+    NAME    MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS
+    loop0     7:0    0  63.3M  1 loop /snap/core20/1852
+    loop1     7:1    0 111.9M  1 loop /snap/lxd/24322
+    loop2     7:2    0  49.8M  1 loop /snap/snapd/18596
+    sda       8:0    0   9.3G  0 disk
+    ├─sda1    8:1    0   9.2G  0 part /
+    ├─sda14   8:14   0     4M  0 part
+    └─sda15   8:15   0   106M  0 part /boot/efi
+    ```
+
+3. Use `growpart` to increase the partition size of your block storage volume (here `/dev/sdb1`):
+    ```
+    growpart /dev/sdX 1
+    ```
+
+    <Message type="tip">
+      Take a note of the space between the device identifier and the partition number.
+    </Message>
+4. Increase the partition size of the volume using `resize2fs`. Replace `/dev/sdX` with the name of your block volume in the following command:
+    ```
+    resize2fs -p /dev/sdX1
+    ```
+5. Check the new block volume size using `lsblk`:
+    ```
+    root@scw-distracted-keldysh:~# lsblk
+    NAME    MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS
+    loop0     7:0    0  63.3M  1 loop /snap/core20/1852
+    loop1     7:1    0 111.9M  1 loop /snap/lxd/24322
+    loop2     7:2    0  49.8M  1 loop /snap/snapd/18596
+    sda       8:0    0  18.6G  0 disk
+    ├─sda1    8:1    0  18.5G  0 part /
+    ├─sda14   8:14   0     4M  0 part
+    └─sda15   8:15   0   106M  0 part /boot/efi
+    ```
+
+## Unmounting a Block Storage volume
+It is important to unmount (detach) a device from the operating system using the `umount` command to avoid data loss before [removing the Block Storage volume](/storage/block/how-to/detach-a-volume/) from the machine.
+
+<Macro id="iam-requirements" />
+
+<Message type="requirement">
+  - You have an account and are logged into the [Scaleway console](https://console.scaleway.com)
+  - You have [configured your SSH key](/console/my-project/how-to/create-ssh-key)
+  - You have a [Instance](/compute/instances/concepts/#instance) with an additional Block Storage volume
+</Message>
+
+1. Connect to your Instance with `ssh`.
+    ```
+    ssh root@<your_instance_ip>
+    ```
+2. Unmount the volume to remove it from your current setup.
+    ```
+    root@scw-festive-agnesi:~# umount /mnt/block-volume
+    ```
+3.  Check that the volume is no longer mounted in the system with `lsblk`.
+    ```
+    root@scw-festive-agnesi:~# lsblk
+    NAME    MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+    sda       8:0    0 23.3G  0 disk
+    vda     252:0    0 18.6G  0 disk
+    ├─vda1  252:1    0 18.5G  0 part /
+    └─vda15 252:15   0  100M  0 part /boot/efi
+    ```
+    <Message type="important">
+      Do not forget to edit the `/etc/fstab` file and delete the line corresponding to your block volume.
+    </Message>
+
+If you want to mount the same volume elsewhere, make sure you change the mount point.
+Refer to the [How to mount and use a block volume](/storage/block/how-to/mount-and-use-volume/) page for more information.
 
 
 <Navigation title="See Also">
