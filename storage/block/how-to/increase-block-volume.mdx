@@ -1,10 +1,10 @@
 ---
 meta:
-  title: How to increase your Block Storage volume size
-  description: This page explains how to increase your Block Storage volume
+  title: How to increase the size of your Block Storage volumes
+  description: This page explains how to increase the size of your Block Storage volumes
 content:
-  h1: How to increase your Block Storage volume size
-  paragraph: This page explains how to increase your Block Storage volume
+  h1: How to increase the size of your Block Storage volumes
+  paragraph: This page explains how to increase the size of your Block Storage volumes
 tags: block storage block-storage increase maximize expand volume size
 dates:
   validation: 2023-06-08
@@ -14,8 +14,6 @@ categories:
   - storage
 ---
 
-With Block Storage it is possible to expand the volume size of an Instance.
-
 <Macro id="iam-requirements" />
 
 <Message type="requirement">
@@ -23,15 +21,11 @@ With Block Storage it is possible to expand the volume size of an Instance.
   - You have [created](/storage/block/how-to/create-a-volume/) a Block Storage volume
 </Message>
 
-1. Click the **Volumes** tab on the Instance information page of the console. A list of your volumes displays.
-    <Message type="tip">
-      You must go to the [Volumes tab](https://console.scaleway.com/instance/volumes) in the Scaleway console and select the volume corresponding to the Instance you want to increase.
-    </Message>
-2. Click <Icon name="more" /> beside the volume you want to increase and then click **Increase Volume**.
+1. Click **Block Storage** in the **Storage** section of the Scaleway Console side menu. The Block Storage page displays.
+2. Click <Icon name="more" /> > **Increase size** next to the volume of your choice. A pop-up displays.
 3. Increase the size according to your preference with the <Icon name="plus" /> button.
-    <Lightbox src="scaleway-increase-volume-modal.webp" alt="" />
 4. Click **Increase volume** to confirm.
     <Message type="note">
-      Currently, only the **increase** of a Block Storage volume is supported. The maximum size of a Block volume is 10 TB.
+      The maximum size of a Block volume is 10 TB.
     </Message>
 
